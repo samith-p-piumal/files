@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Render Manager</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0d0f0e;
+      --surface: #141716;
+      --border: #232825;
+      --border-hi: #2e3530;
+      --text: #d4dbd6;
+      --muted: #5c6b61;
+      --green: #4ade80;
+      --green-dim: #1a3d28;
+      --green-text: #86efac;
+      --red: #f87171;
+      --red-dim: #3d1a1a;
+      --red-text: #fca5a5;
+      --amber: #fbbf24;
+      --mono: 'IBM Plex Mono', monospace;
+      --sans: 'IBM Plex Sans', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+    .container { width: 100%; max-width: 520px; }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 2rem;
+    }
+    .logo {
+      width: 32px; height: 32px;
+      background: var(--green);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo svg { width: 18px; height: 18px; }
+    .header h1 { font-size: 16px; font-weight: 500; letter-spacing: 0.02em; }
+    .header small { display: block; font-size: 11px; color: var(--muted); font-family: var(--mono); margin-top: 1px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .card-label {
+      font-size: 10px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-family: var(--mono);
+      margin-bottom: 12px;
+    }
+
+    input[type=text], input[type=password], input[type=time] {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      height: 38px;
+      padding: 0 12px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus { border-color: var(--green); }
+    input::placeholder { color: var(--muted); }
+
+    .field { margin-bottom: 10px; }
+    .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 5px; font-family: var(--mono); }
+
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+
+    .btn {
+      height: 38px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      letter-spacing: 0.02em;
+    }
+    .btn:hover { border-color: var(--border-hi); filter: brightness(1.15); }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; filter: none; }
+
+    .btn-save { background: transparent; color: var(--muted); width: 100%; }
+    .btn-save:hover { color: var(--text); }
+
+    .btn-start { background: var(--green-dim); color: var(--green-text); border-color: #1f5c35; width: 100%; }
+    .btn-stop  { background: var(--red-dim);   color: var(--red-text);   border-color: #5c1f1f; width: 100%; }
+
+    .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+    .status-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    .pulse {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+    }
+    .pulse-active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .pulse-suspended { background: var(--red); }
+    .pulse-unknown { background: var(--muted); }
+
+    .status-label { color: var(--muted); }
+    .status-val { color: var(--text); font-weight: 500; }
+    .btn-refresh {
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-size: 11px;
+      height: 26px;
+      padding: 0 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-refresh:hover { color: var(--text); border-color: var(--border-hi); }
+
+    .schedule-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .toggle-wrap { display: flex; align-items: center; gap: 8px; }
+    .toggle-label { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+    .toggle {
+      width: 38px; height: 20px; border-radius: 10px;
+      background: var(--border);
+      border: none; cursor: pointer;
+      position: relative; transition: background 0.2s;
+    }
+    .toggle.on { background: var(--green-dim); border: 1px solid #1f5c35; }
+    .toggle::after {
+      content: ''; position: absolute;
+      width: 14px; height: 14px;
+      background: var(--muted);
+      border-radius: 50%; top: 3px;
+      transition: left 0.2s, background 0.2s;
+    }
+    .toggle.on::after { left: 20px; background: var(--green); }
+    .toggle.off::after { left: 3px; }
+
+    .next-run {
+      font-size: 11px; color: var(--muted);
+      font-family: var(--mono);
+      margin-top: 8px;
+      min-height: 16px;
+    }
+
+    .log {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.7;
+      max-height: 160px;
+      min-height: 60px;
+      overflow-y: auto;
+    }
+    .log-entry { display: block; }
+    .log-ok   { color: var(--green-text); }
+    .log-err  { color: var(--red-text); }
+    .log-info { color: var(--muted); }
+    .log-warn { color: var(--amber); }
+
+    .proxy-note {
+      font-size: 11px;
+      color: var(--muted);
+      font-family: var(--mono);
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg);
+      margin-bottom: 10px;
+      line-height: 1.6;
+    }
+    .proxy-note span { color: var(--amber); }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="3" fill="#0d0f0e"/><path d="M6 9l2.5 2.5L13 6" stroke="#4ade80" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div>
+      <h1>Render Instance Manager</h1>
+      <small>start / stop / schedule via Render API</small>
+    </div>
+  </div>
+
+  <!-- Config -->
+  <div class="card">
+    <div class="card-label">Configuration</div>
+    <div class="proxy-note">
+      <span>Proxy URL</span> — set to <code>http://localhost:3001</code> (run server.js locally) or your deployed proxy URL.
+    </div>
+    <div class="field">
+      <label>Proxy base URL</label>
+      <input type="text" id="proxyUrl" value="http://localhost:3001" placeholder="http://localhost:3001" />
+    </div>
+    <div class="field">
+      <label>Render API key</label>
+      <input type="password" id="apiKey" placeholder="rnd_xxxxxxxxxxxxxxxxxxxx" />
+    </div>
+    <div class="field">
+      <label>Service ID</label>
+      <input type="text" id="serviceId" placeholder="srv-xxxxxxxxxxxxxxxxxxxx" />
+    </div>
+    <button class="btn btn-save" onclick="saveConfig()">Save &amp; verify</button>
+  </div>
+
+  <!-- Control -->
+  <div class="card">
+    <div class="card-label">Instance control</div>
+    <div class="status-row">
+      <span class="pulse pulse-unknown" id="statusDot"></span>
+      <span class="status-label">status</span>
+      <span class="status-val" id="statusText">unknown</span>
+      <button class="btn-refresh" onclick="checkStatus()">↻ refresh</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-start" id="btnStart" onclick="doAction('resume')">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polygon points="2,1 11,6 2,11" fill="currentColor"/></svg>
+        start instance
+      </button>
+      <button class="btn btn-stop" id="btnStop" onclick="doAction('suspend')">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="2" y="1" width="3" height="10" rx="1" fill="currentColor"/><rect x="7" y="1" width="3" height="10" rx="1" fill="currentColor"/></svg>
+        stop instance
+      </button>
+    </div>
+  </div>
+
+  <!-- Schedule -->
+  <div class="card">
+    <div class="schedule-header">
+      <div class="card-label" style="margin:0">Auto schedule</div>
+      <div class="toggle-wrap">
+        <span class="toggle-label" id="schedLabel">off</span>
+        <button class="toggle off" id="schedToggle" onclick="toggleSchedule()"></button>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>resume (start) time</label>
+        <input type="time" id="startTime" value="08:00" onchange="updateNextRuns()" />
+      </div>
+      <div class="field">
+        <label>suspend (stop) time</label>
+        <input type="time" id="stopTime" value="23:00" onchange="updateNextRuns()" />
+      </div>
+    </div>
+    <div class="next-run" id="nextRunInfo">enable schedule to see next run times.</div>
+  </div>
+
+  <!-- Log -->
+  <div class="card">
+    <div class="card-label">Activity log</div>
+    <div class="log" id="log">
+      <span class="log-entry log-info">— ready. configure credentials above.</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let schedEnabled = false;
+  let schedTimer = null;
+
+  function cfg() {
+    return {
+      proxy: (document.getElementById('proxyUrl').value || 'http://localhost:3001').replace(/\/$/, ''),
+      apiKey: document.getElementById('apiKey').value.trim(),
+      serviceId: document.getElementById('serviceId').value.trim()
+    };
+  }
+
+  function logMsg(msg, type = 'info') {
+    const log = document.getElementById('log');
+    const now = new Date().toLocaleTimeString('en-SG', { hour12: false });
+    const el = document.createElement('span');
+    el.className = 'log-entry log-' + type;
+    el.textContent = `${now}  ${msg}`;
+    log.insertBefore(el, log.firstChild);
+  }
+
+  async function callProxy(action, method = 'POST') {
+    const { proxy, apiKey, serviceId } = cfg();
+    if (!apiKey || !serviceId) { logMsg('missing api key or service id', 'err'); return null; }
+    const url = `${proxy}/proxy/${serviceId}${action ? '/' + action : ''}`;
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : {};
+      if (res.status >= 400) {
+        logMsg(`api error ${res.status}: ${data.message || data.error || 'unknown'}`, 'err');
+        return null;
+      }
+      return data;
+    } catch (e) {
+      logMsg(`request failed: ${e.message}`, 'err');
+      return null;
+    }
+  }
+
+  async function saveConfig() {
+    const { apiKey, serviceId } = cfg();
+    if (!apiKey || !serviceId) { logMsg('enter api key and service id', 'warn'); return; }
+    logMsg('config saved — checking status...', 'info');
+    await checkStatus();
+  }
+
+  async function checkStatus() {
+    const data = await callProxy('', 'GET');
+    if (!data) return;
+    const state = data.suspended === 'suspended' ? 'suspended' : 'active';
+    setStatus(state);
+    logMsg(`status: ${state}`, 'ok');
+  }
+
+  function setStatus(state) {
+    const dot = document.getElementById('statusDot');
+    const txt = document.getElementById('statusText');
+    dot.className = 'pulse ' + (state === 'active' ? 'pulse-active' : state === 'suspended' ? 'pulse-suspended' : 'pulse-unknown');
+    txt.textContent = state;
+  }
+
+  async function doAction(action) {
+    document.getElementById('btnStart').disabled = true;
+    document.getElementById('btnStop').disabled = true;
+    logMsg(`${action === 'resume' ? 'starting' : 'stopping'} instance...`, 'info');
+    const data = await callProxy(action);
+    if (data !== null) {
+      const newState = action === 'resume' ? 'active' : 'suspended';
+      setStatus(newState);
+      logMsg(`instance ${newState === 'active' ? 'started' : 'stopped'}.`, 'ok');
+    }
+    document.getElementById('btnStart').disabled = false;
+    document.getElementById('btnStop').disabled = false;
+  }
+
+  function toggleSchedule() {
+    schedEnabled = !schedEnabled;
+    const btn = document.getElementById('schedToggle');
+    const lbl = document.getElementById('schedLabel');
+    btn.className = 'toggle ' + (schedEnabled ? 'on' : 'off');
+    lbl.textContent = schedEnabled ? 'on' : 'off';
+    if (schedEnabled) {
+      logMsg('auto schedule enabled', 'ok');
+      schedTimer = setInterval(checkSchedule, 30000);
+      checkSchedule();
+    } else {
+      logMsg('auto schedule disabled', 'info');
+      clearInterval(schedTimer);
+    }
+    updateNextRuns();
+  }
+
+  function getMinutes(timeStr) {
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + m;
+  }
+
+  function checkSchedule() {
+    if (!schedEnabled) return;
+    const now = new Date();
+    const cur = now.getHours() * 60 + now.getMinutes();
+    const startMin = getMinutes(document.getElementById('startTime').value);
+    const stopMin  = getMinutes(document.getElementById('stopTime').value);
+    const dateKey = now.toDateString();
+    const didStart = sessionStorage.getItem(`start_${dateKey}`);
+    const didStop  = sessionStorage.getItem(`stop_${dateKey}`);
+    if (cur >= startMin && cur < startMin + 1 && !didStart) {
+      sessionStorage.setItem(`start_${dateKey}`, '1');
+      logMsg('scheduled resume triggered', 'warn');
+      doAction('resume');
+    }
+    if (cur >= stopMin && cur < stopMin + 1 && !didStop) {
+      sessionStorage.setItem(`stop_${dateKey}`, '1');
+      logMsg('scheduled suspend triggered', 'warn');
+      doAction('suspend');
+    }
+    updateNextRuns();
+  }
+
+  function fmtTime(t) {
+    const [h, m] = t.split(':');
+    const hr = +h;
+    return `${hr > 12 ? hr - 12 : hr || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
+  }
+
+  function updateNextRuns() {
+    const el = document.getElementById('nextRunInfo');
+    if (!schedEnabled) { el.textContent = 'enable schedule to see next run times.'; return; }
+    const s = document.getElementById('startTime').value;
+    const e = document.getElementById('stopTime').value;
+    el.textContent = `next resume: ${fmtTime(s)}  ·  next suspend: ${fmtTime(e)}  (daily)`;
+  }
+</script>
+</body>
+</html>
