@@ -231,12 +231,24 @@
   <div class="card">
     <div class="card-label">Configuration</div>
     <div class="proxy-note">
-      <span>Proxy URL</span> — set to <code>http://localhost:3001</code> (run server.js locally) or your deployed proxy URL.
+      <span>Proxy URL</span> — defaults to local dev or current site in deployed mode.
     </div>
     <div class="field">
       <label>Proxy base URL</label>
-      <input type="text" id="proxyUrl" value="http://localhost:3001" placeholder="http://localhost:3001" />
+      <input type="text" id="proxyUrl" placeholder="http://localhost:3001 or https://your-project.vercel.app" />
     </div>
+    <script>
+      // Auto default to current origin (Vercel/hosted) or local dev fallback
+      document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('proxyUrl');
+        const saved = localStorage.getItem('renderProxyUrl');
+        if (saved) {
+          input.value = saved;
+        } else {
+          input.value = window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin;
+        }
+      });
+    </script>
     <div class="field">
       <label>Render API key</label>
       <input type="password" id="apiKey" placeholder="rnd_xxxxxxxxxxxxxxxxxxxx" />
@@ -307,10 +319,19 @@
 
   function cfg() {
     return {
-      proxy: (document.getElementById('proxyUrl').value || 'http://localhost:3001').replace(/\/$/, ''),
+      proxy: (document.getElementById('proxyUrl').value || (window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin)).replace(/\/$/, ''),
       apiKey: document.getElementById('apiKey').value.trim(),
       serviceId: document.getElementById('serviceId').value.trim()
     };
+  }
+
+  function saveConfig() {
+    const proxyUrl = document.getElementById('proxyUrl').value;
+    if (proxyUrl) { localStorage.setItem('renderProxyUrl', proxyUrl); }
+    const { apiKey, serviceId } = cfg();
+    if (!apiKey || !serviceId) { logMsg('enter api key and service id', 'warn'); return; }
+    logMsg('config saved — checking status...', 'info');
+    return checkStatus();
   }
 
   function logMsg(msg, type = 'info') {
