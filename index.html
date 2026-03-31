@@ -231,24 +231,16 @@
   <div class="card">
     <div class="card-label">Configuration</div>
     <div class="proxy-note">
-      <span>Proxy URL</span> — defaults to local dev or current site in deployed mode.
+      <span>API endpoint</span> — uses same host endpoint at <code>/api/render</code>.
     </div>
     <div class="field">
-      <label>Proxy base URL</label>
-      <input type="text" id="proxyUrl" placeholder="http://localhost:3001 or https://your-project.vercel.app" />
+      <label>Render API key</label>
+      <input type="password" id="apiKey" placeholder="rnd_xxxxxxxxxxxxxxxxxxxx" />
     </div>
-    <script>
-      // Auto default to current origin (Vercel/hosted) or local dev fallback
-      document.addEventListener('DOMContentLoaded', () => {
-        const input = document.getElementById('proxyUrl');
-        const saved = localStorage.getItem('renderProxyUrl');
-        if (saved) {
-          input.value = saved;
-        } else {
-          input.value = window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin;
-        }
-      });
-    </script>
+    <div class="field">
+      <label>Service ID</label>
+      <input type="text" id="serviceId" placeholder="srv-xxxxxxxxxxxxxxxxxxxx" />
+    </div>
     <div class="field">
       <label>Render API key</label>
       <input type="password" id="apiKey" placeholder="rnd_xxxxxxxxxxxxxxxxxxxx" />
@@ -319,15 +311,14 @@
 
   function cfg() {
     return {
-      proxy: (document.getElementById('proxyUrl').value || (window.location.hostname === 'localhost' ? 'http://localhost:3001' : window.location.origin)).replace(/\/$/, ''),
+      apiBase: window.location.origin,
       apiKey: document.getElementById('apiKey').value.trim(),
       serviceId: document.getElementById('serviceId').value.trim()
     };
   }
 
   function saveConfig() {
-    const proxyUrl = document.getElementById('proxyUrl').value;
-    if (proxyUrl) { localStorage.setItem('renderProxyUrl', proxyUrl); }
+
     const { apiKey, serviceId } = cfg();
     if (!apiKey || !serviceId) { logMsg('enter api key and service id', 'warn'); return; }
     logMsg('config saved — checking status...', 'info');
@@ -343,14 +334,19 @@
     log.insertBefore(el, log.firstChild);
   }
 
-  async function callProxy(action, method = 'POST') {
-    const { proxy, apiKey, serviceId } = cfg();
+  async function callRender(action, method = 'POST') {
+    const { apiBase, apiKey, serviceId } = cfg();
     if (!apiKey || !serviceId) { logMsg('missing api key or service id', 'err'); return null; }
-    const url = `${proxy}/proxy/${serviceId}${action ? '/' + action : ''}`;
+    const query = new URLSearchParams({ serviceId });
+    if (action) query.set('action', action);
+    const url = `${apiBase}/api/render?${query.toString()}`;
     try {
       const res = await fetch(url, {
         method,
-        headers: { 'Authorization': `Bearer ${apiKey}` }
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        }
       });
       const text = await res.text();
       const data = text ? JSON.parse(text) : {};
