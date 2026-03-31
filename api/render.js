@@ -79,6 +79,10 @@ module.exports = async (req, res) => {
 
   try {
     const result = await forwardToRender(path, method, authHeader);
+    if (result.status === 404) {
+      res.status(404).json({ error: 'Render service not found, check serviceId and API key', details: result.body });
+      return;
+    }
     res.status(result.status).json(result.body);
   } catch (error) {
     res.status(error.status || 502).json(error.body || { error: 'proxy error' });
