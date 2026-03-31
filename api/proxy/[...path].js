@@ -40,8 +40,16 @@ function forwardToRender(pathParts, method, authHeader) {
 }
 
 module.exports = async (req, res) => {
-  const pathParts = req.query.path || [];
-  if (!Array.isArray(pathParts) || !pathParts.length) {
+  let pathParts = req.query.path || [];
+  if (!Array.isArray(pathParts)) {
+    if (typeof pathParts === 'string' && pathParts.length) {
+      pathParts = [pathParts];
+    } else {
+      pathParts = [];
+    }
+  }
+
+  if (pathParts.length === 0) {
     res.status(404).json({ error: 'Not found. Use /proxy/<serviceId>/<action>' });
     return;
   }
