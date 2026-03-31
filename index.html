@@ -239,7 +239,7 @@
     </div>
     <div class="field">
       <label>Service ID</label>
-      <input type="text" id="serviceId" placeholder="srv-xxxxxxxxxxxxxxxxxxxx" />
+      <input type="password" id="serviceId" placeholder="srv-xxxxxxxxxxxxxxxxxxxx" />
     </div>
     <button class="btn btn-save" onclick="saveConfig()">Save &amp; verify</button>
   </div>
@@ -300,6 +300,18 @@
 <script>
   let schedEnabled = false;
   let schedTimer = null;
+
+  const DEFAULT_API_KEY = 'rnd_70xD33BPD5uAx1CqghD098nhEbt5';
+  const DEFAULT_SERVICE_ID = 'srv-d6dj77p4tr6s73csabng';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const apiInput = document.getElementById('apiKey');
+    const svcInput = document.getElementById('serviceId');
+    apiInput.placeholder = DEFAULT_API_KEY;
+    svcInput.placeholder = DEFAULT_SERVICE_ID;
+    if (!apiInput.value) apiInput.value = DEFAULT_API_KEY;
+    if (!svcInput.value) svcInput.value = DEFAULT_SERVICE_ID;
+  });
 
   function cfg() {
     return {
