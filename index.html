@@ -241,14 +241,6 @@
       <label>Service ID</label>
       <input type="text" id="serviceId" placeholder="srv-xxxxxxxxxxxxxxxxxxxx" />
     </div>
-    <div class="field">
-      <label>Render API key</label>
-      <input type="password" id="apiKey" placeholder="rnd_xxxxxxxxxxxxxxxxxxxx" />
-    </div>
-    <div class="field">
-      <label>Service ID</label>
-      <input type="text" id="serviceId" placeholder="srv-xxxxxxxxxxxxxxxxxxxx" />
-    </div>
     <button class="btn btn-save" onclick="saveConfig()">Save &amp; verify</button>
   </div>
 
@@ -369,7 +361,7 @@
   }
 
   async function checkStatus() {
-    const data = await callProxy('', 'GET');
+    const data = await callRender('', 'GET');
     if (!data) return;
     const state = data.suspended === 'suspended' ? 'suspended' : 'active';
     setStatus(state);
@@ -387,7 +379,7 @@
     document.getElementById('btnStart').disabled = true;
     document.getElementById('btnStop').disabled = true;
     logMsg(`${action === 'resume' ? 'starting' : 'stopping'} instance...`, 'info');
-    const data = await callProxy(action);
+    const data = await callRender(action);
     if (data !== null) {
       const newState = action === 'resume' ? 'active' : 'suspended';
       setStatus(newState);

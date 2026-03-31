@@ -41,11 +41,18 @@ Set `Proxy base URL` in `index.html` UI to:
 4. Use **start instance** / **stop instance** buttons
 5. Enable **Auto schedule** and set your resume/suspend times
 
-## Deploying the proxy
-You can deploy `server.js` to any Node.js host (Render, Railway, Fly.io).
-Then update the **Proxy base URL** in the frontend to your deployed URL.
+## Deploying to Vercel (no local proxy needed)
+
+This deploys the serverless API directly:
+
+- `GET  /api/render?serviceId=<id>`
+- `POST /api/render?serviceId=<id>&action=resume`
+- `POST /api/render?serviceId=<id>&action=suspend`
+
+The frontend calls this endpoint, and it forwards to Render API.
 
 ## Endpoints
-- `GET  /proxy/:serviceId`         → get service status
-- `POST /proxy/:serviceId/resume`  → start instance
-- `POST /proxy/:serviceId/suspend` → stop instance
+- `GET  /api/render?serviceId=<id>`
+- `POST /api/render?serviceId=<id>&action=resume`
+- `POST /api/render?serviceId=<id>&action=suspend`
+

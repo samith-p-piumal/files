@@ -1,10 +1,7 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/proxy/[...path].js", "use": "@vercel/node" },
+    { "src": "api/render.js", "use": "@vercel/node" },
     { "src": "index.html", "use": "@vercel/static" }
-  ],
-  "routes": [
-    { "src": "/proxy/(.*)", "dest": "/api/proxy/$1" }
   ]
 }
